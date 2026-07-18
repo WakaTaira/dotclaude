@@ -32,7 +32,9 @@ while true; do
       command grep -qxF "$id" "$SEEN" 2>/dev/null || { echo "NEW-COMMENT [$loc] $body"; echo "$id" >> "$SEEN"; }
     done
   fi
-  sleep 2
+  # hunkdiff（同梱 Bun の FFI JIT）が実行のたびに約 13MB の .so を /tmp へリークするため、毎周回収する
+  find /tmp -maxdepth 1 -name '.*-00000000.so' -user "$USER" -delete 2>/dev/null
+  sleep 3
 done
 ```
 
@@ -46,3 +48,5 @@ done
 
 - Monitor はセッション寿命であり、新しい Claude セッションでは張り直しが必要（この「一言で張り直す」運用を自動化しすぎない — hunk が動いていないセッションで常駐させても監視が即座に死ぬだけである）
 - 監視を止めるよう頼まれたら TaskStop で該当 Monitor を止める
+- **hunkdiff の /tmp リーク（重要）**: hunk CLI（〜0.17.1 で確認）は実行のたびに同梱 Bun の FFI 産物（OpenTUI ネイティブライブラリ、約 13MB の `.so`）を `/tmp/.{hex}-00000000.so` として残す。高頻度ポーリングと組み合わさると tmpfs を数時間で食い潰す（2026-07-19 に 16GB 満杯の実害）。上記スクリプトの find による毎周回収は撤去しないこと。hunk CLI を skill 外で高頻度実行する場合も同様の回収を入れる。根本原因は Bun 本体（oven-sh/bun#30962、修正 PR #29587）で、修正版 Bun でリビルドされた hunkdiff リリースが出たら `npm update -g hunkdiff` で根治確認する
+- **Windows での注意（未実測）**: リーク先は /tmp ではなく `%TEMP%` 配下（`.{hex}-00000000.dll` 相当と推定）になり、上記 find は効かない。Windows で hunk の高頻度実行を始める前に `%TEMP%` の同種ファイル蓄積を確認し、回収先をあわせること
