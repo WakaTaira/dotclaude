@@ -1,0 +1,20 @@
+[package]
+name = "statusline"
+version = "0.1.0"
+edition = "2021"
+description = "Claude Code statusline — context/5h/7d/model display with zero runtime deps"
+
+[[bin]]
+name = "statusline"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = { version = "1", default-features = false, features = ["std"] }
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
