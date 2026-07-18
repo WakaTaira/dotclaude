@@ -32,6 +32,7 @@
         "ctrl+g": "chat:externalEditor",
         "ctrl+s": "chat:stash",
         "ctrl+v": "chat:imagePaste",
+        "alt+v": "chat:imagePaste",
         "space": "voice:pushToTalk"
       }
     },
