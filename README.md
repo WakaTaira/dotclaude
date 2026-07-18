@@ -10,7 +10,6 @@ Self-made Claude Code assets: skills, agents, hooks, a Rust statusline, and keyb
 |---|---|
 | `skills/` | 自作スキル（relay / relay-opus / pc-power / hunk-watch / grill-me） |
 | `agents/` | relay 系サブエージェント定義 7 種 |
-| `hooks/` | herdr 連携フック（`herdr-agent-state.sh`。Windows 用 `.ps1` 版は追って追加） |
 | `statusline/` | Rust 製 statusline（stdin 駆動・低 RSS）。`cargo build --release` で `target/release/statusline` を生成 |
 | `keybindings.json` | Claude Code キーバインド設定 |
 
