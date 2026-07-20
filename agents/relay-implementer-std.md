@@ -1,6 +1,6 @@
 ---
 name: relay-implementer-std
-description: relay / relay-opus 専用の標準実装エージェント。既存パターンに沿ったコード生成・変更・リファクタリングを担当する。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用の標準実装エージェント。既存パターンに沿ったコード生成・変更・リファクタリングを担当する。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
 model: sonnet
 effort: medium

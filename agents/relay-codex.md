@@ -1,6 +1,6 @@
 ---
 name: relay-codex
-description: relay / relay-opus 専用のクロスベンダー実装エージェント。実装内容が完全に確定したタスクを、CLIProxyAPI（127.0.0.1:8317）経由で GPT を載せたヘッドレス Claude Code（`claude -p`）に流し、GPT に実装させて結果を独立検証・報告する。コードは自分では書かない。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用のクロスベンダー実装エージェント。実装内容が完全に確定したタスクを、CLIProxyAPI（127.0.0.1:8317）経由で GPT を載せたヘッドレス Claude Code（`claude -p`）に流し、GPT に実装させて結果を独立検証・報告する。コードは自分では書かない。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium

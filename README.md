@@ -8,7 +8,7 @@ Self-made Claude Code assets: skills, agents, hooks, a Rust statusline, and keyb
 
 | パス | 内容 |
 |---|---|
-| `skills/` | 自作スキル（relay / relay-opus / pc-power / hunk-watch / grill-me / creating-pull-requests-en / creating-pull-requests-ja） |
+| `skills/` | 自作スキル（relay / pc-power / hunk-watch / grill-me / creating-pull-requests-en / creating-pull-requests-ja） |
 | `rules/` | 常時ロードの rules（`~/.claude/rules` から symlink） |
 | `agents/` | relay 系サブエージェント定義 7 種 |
 | `statusline/` | Rust 製 statusline（stdin 駆動・低 RSS）。`cargo build --release` で `target/release/statusline` を生成 |

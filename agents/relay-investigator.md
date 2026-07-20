@@ -1,8 +1,8 @@
 ---
 name: relay-investigator
-description: relay / relay-opus 専用の調査エージェント。コードベース・仕様・不具合原因を読み取り専用で調査し、事実・選択肢・推奨を構造化報告で返す。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用の調査エージェント。コードベース・仕様・不具合原因を読み取り専用で調査し、事実・選択肢・推奨を構造化報告で返す。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Bash", "Agent"]
-model: inherit
+model: fable
 effort: high
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: relay-verifier
-description: relay / relay-opus 専用の検証エージェント。ビルド・テスト・lint を実行し、結果の一次評価を構造化報告で返す。修正は行わない。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用の検証エージェント。ビルド・テスト・lint を実行し、結果の一次評価を構造化報告で返す。修正は行わない。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium

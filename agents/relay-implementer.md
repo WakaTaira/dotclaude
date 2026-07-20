@@ -1,6 +1,6 @@
 ---
 name: relay-implementer
-description: relay / relay-opus 専用の高難度実装エージェント。複数ファイルにまたがる変更、並行処理・境界条件を含む実装、複雑なデバッグを担当する。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用の高難度実装エージェント。複数ファイルにまたがる変更、並行処理・境界条件を含む実装、複雑なデバッグを担当する。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
 model: opus
 effort: high

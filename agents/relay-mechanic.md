@@ -1,6 +1,6 @@
 ---
 name: relay-mechanic
-description: relay / relay-opus 専用の機械的作業エージェント。ファイル探索・単純置換・定型コード生成など、判断を要しない作業のみを担当する。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用の機械的作業エージェント。ファイル探索・単純置換・定型コード生成など、判断を要しない作業のみを担当する。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
 model: haiku
 effort: low

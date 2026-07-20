@@ -1,8 +1,8 @@
 ---
 name: relay-reviewer
-description: relay / relay-opus 専用のレビューエージェント。変更差分の品質・整合性・セキュリティを読み取り専用で評価し、重大度つきの指摘を構造化報告で返す。/relay または /relay-opus のタスク分解から明示的にディスパッチされたときにのみ使用する。
+description: relay 専用のレビューエージェント。変更差分の品質・整合性・セキュリティを読み取り専用で評価し、重大度つきの指摘を構造化報告で返す。/relay のタスク分解から明示的にディスパッチされたときにのみ使用する。
 tools: ["Read", "Grep", "Glob", "Bash"]
-model: inherit
+model: fable
 effort: high
 ---
 
