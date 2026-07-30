@@ -48,7 +48,7 @@ description: 設計合意済みタスクの実装フェーズを自走させる�
 |---|---|---|
 | relay-investigator | fable / high | コードベース・仕様・原因の調査。選択肢と推奨を返す（読み取り専用） |
 | relay-reviewer | fable / high | 変更差分の品質・整合性・セキュリティ評価（読み取り専用） |
-| relay-implementer | opus（4.8）/ high | 複数ファイルにまたがる変更、並行処理・境界条件の実装、複雑なデバッグ |
+| relay-implementer | opus / high | 複数ファイルにまたがる変更、並行処理・境界条件の実装、複雑なデバッグ |
 | relay-implementer-std | sonnet / medium | 既存パターンに沿ったコード生成、リファクタリング |
 | relay-codex | sonnet / medium（実装本体は CLIProxyAPI 経由の GPT ヘッドレス Claude Code） | 実装タスクの既定レーン。確定済みの仕様をヘッドレス Claude Code（GPT）に流し、結果を独立検証して返す |
 | relay-verifier | sonnet / medium | ビルド・テスト・lint の実行と結果の一次評価（修正はしない） |
