@@ -1,19 +1,20 @@
 // カスタムステータスライン - Claude Code statusline hook 用 (Rust 版)
 //
 // Claude Code が stdin で渡す JSON (model / context_window / rate_limits) を基本入力とする。
-// 外部プロセス起動は行わない。ただし fable モデルの週間使用量のみ OAuth usage API
-// (https://api.anthropic.com/api/oauth/usage) への HTTP 呼び出しで取得し、結果は短命
-// キャッシュ経由で参照する。その他の表示は Python 版 (~/.claude/statusline.py) の
-// 出力とバイト単位で互換になるよう整数化・丸め・配色をすべて移植している。
+// 外部プロセス起動は行わない。レート制限 3 種 (5h / 7d / fable 週間) は OAuth usage API
+// (https://api.anthropic.com/api/oauth/usage) への HTTP 呼び出しを共通の一次ソースとし、
+// 結果は短命キャッシュ経由で参照する。API が取得できない場合のみ 5h / 7d は stdin の
+// rate_limits に落ちる。表示は Python 版 (~/.claude/statusline.py) の出力とバイト単位で
+// 互換になるよう整数化・丸め・配色をすべて移植している。
 
-use chrono::{Local, TimeZone};
+use chrono::{DateTime, Local, TimeZone};
 use serde_json::{json, Value};
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-// --- fable 週間使用量 (usage API) 設定 ---
+// --- レート制限 (usage API) 設定 ---
 const USAGE_API_URL: &str = "https://api.anthropic.com/api/oauth/usage";
 const USAGE_CACHE_TTL_SECS: i64 = 120; // キャッシュ有効期間。API の呼び出し頻度を抑えるためのしきい値
 const USAGE_HTTP_TIMEOUT: Duration = Duration::from_secs(2); // 接続・全体ともに 2 秒
@@ -138,21 +139,58 @@ fn fmt_reset(ts: i64) -> String {
     }
 }
 
-/// レート制限の残量を表示する (5時間 / 週間で共通)
-fn render_limit(data: &Value, key: &str, icon: &str, label: &str, show_reset: bool) -> String {
+/// resets_at を表示用の HH:MM に整形する。usage API は RFC 3339 文字列、stdin は Unix 秒で渡す
+fn fmt_reset_value(v: &Value) -> String {
+    if let Some(s) = v.as_str() {
+        return DateTime::parse_from_rfc3339(s)
+            .map(|dt| dt.with_timezone(&Local).format("%H:%M").to_string())
+            .unwrap_or_default();
+    }
+    match v.as_i64() {
+        Some(ts) => fmt_reset(ts),
+        None => String::new(),
+    }
+}
+
+/// レート制限の使用率と resets_at を取り出す。
+/// usage API の payload (five_hour / seven_day) を一次ソースとし、無い場合のみ stdin の
+/// rate_limits に落ちる。fable 週間残量と同じ経路にそろえることで、起動直後 (stdin に
+/// rate_limits がまだ無い時点) でも 3 つの残量が同時に表示される
+fn limit_source<'a>(
+    data: &'a Value,
+    usage: Option<&'a Value>,
+    key: &str,
+) -> (Option<f64>, &'a Value) {
+    if let Some(u) = usage {
+        let info = &u[key];
+        if let Some(pct) = info["utilization"].as_f64() {
+            return (Some(pct), &info["resets_at"]);
+        }
+    }
     let info = &data["rate_limits"][key];
-    let used_pct = match info["used_percentage"].as_f64() {
+    (info["used_percentage"].as_f64(), &info["resets_at"])
+}
+
+/// レート制限の残量を表示する (5時間 / 週間で共通)
+fn render_limit(
+    data: &Value,
+    usage: Option<&Value>,
+    key: &str,
+    icon: &str,
+    label: &str,
+    show_reset: bool,
+) -> String {
+    let (used_pct, resets_at) = limit_source(data, usage, key);
+    let used_pct = match used_pct {
         Some(v) => v,
         None => return format!("{} {} --", icon, label),
     };
     let remain = (100.0 - used_pct).max(0.0);
     let mut text = format!("{} {} {:.0}% left", icon, label, remain);
     if show_reset {
-        if let Some(ts) = info["resets_at"].as_i64() {
-            let r = fmt_reset(ts);
-            if !r.is_empty() {
-                text.push_str(&format!(" → {}", r));
-            }
+        let r = fmt_reset_value(resets_at);
+        if !r.is_empty() {
+            text.push_str(&format!(" → {}", r));
         }
     }
     format!("{}{}{}", remain_color(remain), text, RESET)
@@ -310,15 +348,17 @@ fn main() {
     let _ = io::stdin().read_to_string(&mut input);
     let data: Value = serde_json::from_str(&input).unwrap_or(Value::Null);
 
+    // usage API の payload を先に取得し、レート制限 3 種 (5h / 7d / fable 週間) の共通ソースにする
+    let usage = load_usage_payload().filter(|v| !v.is_null());
     let mut parts: Vec<String> = vec![
         render_model(&data),
         render_context(&data),
-        render_limit(&data, "five_hour", "⏰", "5h", true),
-        render_limit(&data, "seven_day", "📅", "7d", false),
+        render_limit(&data, usage.as_ref(), "five_hour", "⏰", "5h", true),
+        render_limit(&data, usage.as_ref(), "seven_day", "📅", "7d", false),
     ];
     // fable 週間使用量を seven_day の直後に並記する (取得不能時はセグメント自体を出さない)
-    if let Some(payload) = load_usage_payload() {
-        if let Some(seg) = render_fable_weekly(&payload) {
+    if let Some(payload) = usage.as_ref() {
+        if let Some(seg) = render_fable_weekly(payload) {
             parts.push(seg);
         }
     }

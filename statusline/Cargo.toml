@@ -2,7 +2,7 @@
 name = "statusline"
 version = "0.1.0"
 edition = "2021"
-description = "Claude Code statusline — context/5h/7d/model display plus fable weekly usage via OAuth usage API"
+description = "Claude Code statusline — model/context display plus 5h/7d/fable-weekly rate limits sourced from the OAuth usage API (stdin rate_limits as fallback)"
 
 [[bin]]
 name = "statusline"
