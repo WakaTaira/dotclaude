@@ -3,12 +3,9 @@ name: pc-power
 description: >-
   Control the power state of the current machine (Linux native, WSL-hosted
   Windows, or native Windows). Supports sleep, hibernate, lock, shutdown,
-  and restart. Invokable as /pc-power or via natural language. Arguments
-  are interpreted as natural language in any language — no rigid keyword
-  matching. TRIGGER phrases (non-exhaustive):
-  "PC寝かせて", "ロックして", "シャットダウンして", "電源切って",
-  "再起動して", "休止して", "sleep the pc", "lock screen",
-  "shut it down", "restart laptop", "hibernate". When the argument's intent
+  and restart. Use when the user asks, in any language, to put this machine
+  to sleep, hibernate it, lock the screen, shut it down, or restart it
+  (e.g. 「PC寝かせて」「電源切って」). When the argument's intent
   is ambiguous, ask for clarification instead of guessing — destructive
   actions (shutdown/restart) must never be triggered by inference alone.
 origin: personal
