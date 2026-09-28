@@ -159,6 +159,8 @@ relay-investigator / relay-reviewer の fable はメインセッションのモ�
 - 同一タスクが 2 回差し戻しになったとき
 - 破壊的操作（削除、履歴改変、外部公開）が必要になったとき
 
+停止するときは、自走モードでなくても応答の**最終行**に後述「状態宣言」の `RELAY-STATUS` 行（DONE または対応する種別の BLOCKED）を出力する。この行は Stop hook がユーザーへの通知に使う機械的シグナルであり、欠けると通知が飛ばない。本文中で宣言を引用するときは行頭に置かない（誤通知の原因になる）。
+
 ## 難度判定の指針
 
 - 「簡単そう」と「実際に簡単」は異なる。コンテキストの理解や判断を要するタスクは、見た目が単純でも relay-mechanic ではなく relay-implementer-std 以上に割り当てる。純粋に機械的（判断を含まない）と確信できる場合にのみ relay-mechanic を使う
@@ -196,7 +198,7 @@ Step 1 のタスク分解表は、会話への出力に加えて TaskCreate で�
 
 ### 呼び戻し
 
-DONE / BLOCKED で停止するときは PushNotification で通知する。内容は種別と、ユーザーに求める行動の 1 行とする。
+DONE / BLOCKED の宣言行を最終行に出せば、Stop hook（`~/.claude/repo/hooks/relay-notify.py`）がデスクトップ通知を出す。統括者が PushNotification を叩く必要はない（herdr ペイン内では PushNotification が届かないため、通知は hook に一本化している）。
 
 ### 開始前チェック
 
