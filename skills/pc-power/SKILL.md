@@ -1,8 +1,8 @@
 ---
 name: pc-power
 description: >-
-  Control the power state of the current machine (Linux native, WSL-hosted
-  Windows, or native Windows). Supports sleep, hibernate, lock, shutdown,
+  Control the power state of the current machine (Linux native or native
+  Windows; WSL is not supported). Supports sleep, hibernate, lock, shutdown,
   and restart. Use when the user asks, in any language, to put this machine
   to sleep, hibernate it, lock the screen, shut it down, or restart it
   (e.g. 「PC寝かせて」「電源切って」). When the argument's intent
@@ -14,7 +14,8 @@ origin: personal
 # pc-power — ホストマシン電源操作スキル
 
 実行中マシンの電源状態を切り替える。スリープ／休止／ロック／シャットダウン／再起動の 5 動作を、
-自然言語の引数で振り分けて実行する。**Linux native（Arch / NixOS）・WSL・Windows native** の 3 環境で動く。
+自然言語の引数で振り分けて実行する。**Linux native（Arch / NixOS）・Windows native** の 2 環境で動く。
+WSL は対象外とする（WSL interop を無効化した環境では Windows 側の実行ファイルを起動できないため）。
 
 ## 実行前の環境判定
 
@@ -22,7 +23,7 @@ origin: personal
 
 | 判定方法 | 結果 → 環境 |
 |----------|-------------|
-| `uname` が `Linux` かつ `[ -e /mnt/c/Windows ]` が成功 | **WSL**（Windows ホストを操作） |
+| `uname` が `Linux` かつ `[ -e /mnt/c/Windows ]` が成功 | **WSL** → **非対応**。何も実行せず「WSL からは電源操作できないため、Windows 側で操作してほしい」と伝えて終える |
 | `uname` が `Linux` かつ `/mnt/c/Windows` が無い | **Linux native**（systemd 前提） |
 | `$env:OS` が `Windows_NT` または `$IsWindows` が `True` | **Windows native (PowerShell)** |
 | `/mnt/c/Windows` が無い & `uname` がエラー | **Windows native** |
@@ -34,13 +35,13 @@ origin: personal
 ユーザの引数（または直前の発話）を **自然言語として解釈** し、下表のどれかに振り分けて
 **環境に応じたコマンド**を実行する。キーワードに完全一致する必要はない。意図が読めれば良い。
 
-| 意図 | 例（参考） | Linux native | WSL | Windows native | 補足 |
-|------|------------|--------------|-----|----------------|------|
-| **sleep** | スリープ／寝かせる／suspend | `systemctl suspend` | `/mnt/c/Windows/System32/rundll32.exe powrprof.dll,SetSuspendState 0,1,0` | `rundll32.exe powrprof.dll,SetSuspendState 0,1,0` | **既定**。引数無しならこれ |
-| **hibernate** | 休止／hibernate | `systemctl hibernate` | `/mnt/c/Windows/System32/rundll32.exe powrprof.dll,SetSuspendState 1,1,0` | `rundll32.exe powrprof.dll,SetSuspendState 1,1,0` | Linux はスワップ設定が前提。失敗したら `systemctl status systemd-hibernate.service` を見る |
-| **lock** | ロック／画面ロック | `loginctl lock-session`（効かなければ `hyprlock &` 等 idle デーモン直叩き） | `/mnt/c/Windows/System32/rundll32.exe user32.dll,LockWorkStation` | `rundll32.exe user32.dll,LockWorkStation` | Linux はセッションのロッカー登録に依存 |
-| **shutdown** | シャットダウン／電源切る／落とす | `systemctl poweroff` | `/mnt/c/Windows/System32/shutdown.exe /s /t 0` | `shutdown.exe /s /t 0` | **破壊的**: 即時シャットダウン |
-| **restart** | 再起動／リスタート／reboot | `systemctl reboot` | `/mnt/c/Windows/System32/shutdown.exe /r /t 0` | `shutdown.exe /r /t 0` | **破壊的**: 即時再起動 |
+| 意図 | 例（参考） | Linux native | Windows native | 補足 |
+|------|------------|--------------|----------------|------|
+| **sleep** | スリープ／寝かせる／suspend | `systemctl suspend` | `rundll32.exe powrprof.dll,SetSuspendState 0,1,0` | **既定**。引数無しならこれ |
+| **hibernate** | 休止／hibernate | `systemctl hibernate` | `rundll32.exe powrprof.dll,SetSuspendState 1,1,0` | Linux はスワップ設定が前提。失敗したら `systemctl status systemd-hibernate.service` を見る |
+| **lock** | ロック／画面ロック | `loginctl lock-session`（効かなければ `hyprlock &` 等 idle デーモン直叩き） | `rundll32.exe user32.dll,LockWorkStation` | Linux はセッションのロッカー登録に依存 |
+| **shutdown** | シャットダウン／電源切る／落とす | `systemctl poweroff` | `shutdown.exe /s /t 0` | **破壊的**: 即時シャットダウン |
+| **restart** | 再起動／リスタート／reboot | `systemctl reboot` | `shutdown.exe /r /t 0` | **破壊的**: 即時再起動 |
 
 Linux native の systemctl 系は polkit がアクティブセッションのユーザーに許可を出すため、通常 sudo 不要。
 （NixOS でも同一コマンドで動く。ディスパッチはこの表のまま変更不要）
@@ -94,9 +95,6 @@ Session 0 寄りで対話デスクトップから分離されるため、`SetSus
   ```jsonc
   // Linux native 用
   "Bash(systemctl suspend)"
-
-  // WSL 用
-  "Bash(/mnt/c/Windows/System32/rundll32.exe powrprof.dll,SetSuspendState 0,1,0)"
 
   // Windows native 用（PowerShell）
   "PowerShell(rundll32.exe powrprof.dll,SetSuspendState 0,1,0)"
