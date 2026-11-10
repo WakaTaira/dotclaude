@@ -28,6 +28,21 @@ command -v codex >/dev/null && test -f ~/.codex/auth.json && echo preflight-ok
 - モデルの可用性はプリフライトでは調べない。`codex exec` が明示エラー（例: `The '<モデル名>' model is not supported when using Codex with a ChatGPT account.`）を返すので、それが振り直しの正規のシグナルである
 - 1 セッションに 1 回でよい。直接呼び出しでは、そのセッション最初の呼び出し前に 1 度だけ実行する
 
+### モデル名の解決
+
+Codex CLI には系統名だけで最新版を選ぶ別名が無い。モデルは系統名（luna・sol）で決め、実際のモデル名は呼び出しの直前に、Codex CLI が自分で更新するモデル一覧（`~/.codex/models_cache.json`）から引く。同じ系統のうち版番号が最も大きいものを選ぶ。
+
+```bash
+codex_model() {   # 使い方: codex_model luna
+  jq -r --arg f "$1" '[.models[] | select(.visibility=="list") | .slug | select(test("^gpt-[0-9.]+-" + $f + "$"))]
+    | sort_by(capture("^gpt-(?<v>[0-9.]+)-").v | split(".") | map(tonumber)) | last // empty' ~/.codex/models_cache.json
+}
+```
+
+- 出力が空（一覧が無い・系統が消えた）なら codex を呼ばず、「失敗（モデル名を解決できない）」として扱う。推測でモデル名を書かない
+- 解決したモデル名は完了報告に書く（版が上がったことに統括者が気づけるようにする）
+- 統括者が完全なモデル名（`gpt-…`）を指名したときは、解決せずそのまま使う
+
 ### 引数
 
 `codex exec` を 1 タスクにつき 1 回（新規スレッド）実行する。引数は次のとおりとし、変更は統括者の指名があった項目に限る。
@@ -36,7 +51,7 @@ command -v codex >/dev/null && test -f ~/.codex/auth.json && echo preflight-ok
 |---|---|---|
 | プロンプト | spec 全文（後述）をファイルに書き、標準入力から渡す（末尾の `-`） | タスクそのもの。長文と記号をシェルの引用から守る |
 | `-c developer_instructions=…` | 役割規律ブロック（後述）をファイルに書き、`jq -Rs .` で文字列化して渡す | relay の実装規律を呼び出し単位で注入する。改行・引用符・バックスラッシュを含んでも崩れないことは実測済み |
-| `-m` | `gpt-5.6-luna`（既定）/ `gpt-5.6-sol`（最高難度） | 実装レーンは luna を既定とし、luna max でも足りない難度のみ sol に上げる。`gpt-6-astra` は実装レーンでは使わない（コスト）。それ以外のモデルは統括者が明示指名したときに限る |
+| `-m` | luna 系の最新（既定）/ sol 系の最新（最高難度）。「モデル名の解決」で引く | 実装レーンは luna を既定とし、luna max でも足りない難度のみ sol に上げる。astra 系は実装レーンでは使わない（コスト）。それ以外のモデルは統括者が明示指名したときに限る |
 | `-c model_reasoning_effort=…` | `"low"` / `"max"` / `"high"` | model と対で難度 3 段から選ぶ。relay-implementer-std 相当の標準難度 = luna `"low"`、relay-implementer 相当の高難度 = luna `"max"`、それでも足りない最高難度 = sol `"high"`。sol の `"xhigh"` / `"max"` はクォータ消費が大きく、統括者が明示指名したときに限る。`"ultra"`（自動タスク委譲）は使わない |
 | `-s` | `workspace-write` | 書き込みを作業ツリーに限定する。範囲外への書き込みはエンジンが拒否する |
 | `-c approval_policy=…` | `"never"` | 承認プロンプトで停止させない（防壁は sandbox が担う） |
@@ -48,8 +63,9 @@ command -v codex >/dev/null && test -f ~/.codex/auth.json && echo preflight-ok
 
 ```bash
 W=<scratchpad>/codex/<タスク名>   # spec.md と dev.txt を先に書いておく
+M=$(codex_model luna); [ -n "$M" ] || { echo "モデル名を解決できない" >&2; exit 1; }
 CODEX_OUTPUT_STYLE=none codex exec --json \
-  -m gpt-5.6-luna -c model_reasoning_effort='"low"' \
+  -m "$M" -c model_reasoning_effort='"low"' \
   -c "developer_instructions=$(jq -Rs . < "$W/dev.txt")" \
   -c approval_policy='"never"' -s workspace-write \
   -C <作業ルート> -o "$W/last.md" - < "$W/spec.md" > "$W/events.jsonl" 2> "$W/stderr.txt"

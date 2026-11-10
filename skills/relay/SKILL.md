@@ -20,7 +20,7 @@ description: 設計合意済みタスクの実装フェーズを自走させる�
   個別の作業を、それぞれ独立したコンテキストウィンドウで遂行する。
 
 - **Codex（relay-codex-reviewer）= 外部のレビューレイヤー**
-  GPT を使うのはレビューのみである（`gpt-6-astra`）。実装・調査・検証はすべて Claude レーンの relay-* が担う。詳細は後述「クロスベンダーレーン」節に記す。
+  GPT を使うのはレビューのみである（astra 系の最新）。実装・調査・検証はすべて Claude レーンの relay-* が担う。詳細は後述「クロスベンダーレーン」節に記す。
 
 ## 実行手順
 
@@ -52,7 +52,7 @@ description: 設計合意済みタスクの実装フェーズを自走させる�
 | エージェント | model / effort | 用途 |
 |---|---|---|
 | relay-investigator | fable / high | コードベース・仕様・原因の調査。選択肢と推奨を返す（読み取り専用） |
-| relay-codex-reviewer | sonnet / medium（レビュー本体は GPT `gpt-6-astra`、effort high） | レビュータスクの既定レーン。GPT の指摘の実在性を検証して返す（読み取り専用） |
+| relay-codex-reviewer | sonnet / medium（レビュー本体は GPT の astra 系の最新、effort high） | レビュータスクの既定レーン。GPT の指摘の実在性を検証して返す（読み取り専用） |
 | relay-reviewer | fable / high | relay-codex-reviewer（astra）が使えないときのフォールバック先。変更差分の品質・整合性・セキュリティ評価（読み取り専用） |
 | relay-implementer | opus / high | 高難度の実装。複数ファイルにまたがる変更、並行処理・境界条件の実装、複雑なデバッグ |
 | relay-implementer-std | sonnet / medium | 実装タスクの既定レーン。既存パターンに沿ったコード生成・変更、リファクタリング |
@@ -67,7 +67,7 @@ relay-investigator / relay-reviewer の fable はメインセッションのモ�
 
 #### クロスベンダーレーン（relay-codex-reviewer）とフォールバック
 
-レビュータスクの既定レーンは relay-codex-reviewer である。レビュー本体を Codex CLI（`codex exec`）経由のネイティブ GPT（`gpt-6-astra`、effort high）が担うことで、Claude が書いた実装を別ベンダーの目で読み、単一ベンダーのモデル群が揃って見逃す問題を拾う。
+レビュータスクの既定レーンは relay-codex-reviewer である。レビュー本体を Codex CLI（`codex exec`）経由のネイティブ GPT（astra 系の最新、effort high。モデル名は relay-codex-reviewer が呼び出し時に解決する）が担うことで、Claude が書いた実装を別ベンダーの目で読み、単一ベンダーのモデル群が揃って見逃す問題を拾う。
 
 - **レビュー（relay-codex-reviewer）**: サブエージェント経由で呼ぶ——GPT のレビュー本文は実測 6k〜11k 字と大きく、Critical / Major の実在性検証（該当行の Read）まで含めるとメインに載る量が報告（4k 字前後）の倍以上になるためである
 - **フォールバック（astra → fable）**: relay-codex-reviewer が環境起因の「失敗」（Codex CLI 未導入・未認証・モデル未提供・利用制限・クォータ枯渇・レート制限・GPT 利用不可）を返したら、再試行せず、**同じプロンプトのまま** relay-reviewer（fable / high）へ振り直す。プロンプトは relay-codex-reviewer に渡したものを一字も変えずに渡す（軸指定・規約軸の文脈制限も含めて同一）。フォールバックした事実と理由は完了報告に明記する。一度環境起因で失敗したら、同一セッション中は astra を再プローブせず、以降のレビューは最初から relay-reviewer に振ってよい

@@ -24,13 +24,30 @@ command -v codex >/dev/null && test -f ~/.codex/auth.json && echo preflight-ok
 
 ## `codex exec` の組み立て
 
+### モデル名の解決
+
+Codex CLI には系統名だけで最新版を選ぶ別名が無い。モデルは系統名（astra）で決め、実際のモデル名は呼び出しの直前に、Codex CLI が自分で更新するモデル一覧（`~/.codex/models_cache.json`）から引く。同じ系統のうち版番号が最も大きいものを選ぶ。
+
+```bash
+codex_model() {   # 使い方: codex_model astra
+  jq -r --arg f "$1" '[.models[] | select(.visibility=="list") | .slug | select(test("^gpt-[0-9.]+-" + $f + "$"))]
+    | sort_by(capture("^gpt-(?<v>[0-9.]+)-").v | split(".") | map(tonumber)) | last // empty' ~/.codex/models_cache.json
+}
+```
+
+- 出力が空（一覧が無い・系統が消えた）なら codex を呼ばず、「失敗（モデル名を解決できない）」として扱う。推測でモデル名を書かない
+- 解決したモデル名は完了報告に書く（版が上がったことに統括者が気づけるようにする）
+- 統括者が完全なモデル名（`gpt-…`）を指名したときは、解決せずそのまま使う
+
+### 引数
+
 `codex exec` を 1 回実行する。引数は次のとおりとし、変更は統括者の指名があった項目に限る。
 
 | 引数 | 値 | 理由 |
 |---|---|---|
 | プロンプト | レビュー依頼全文（後述）をファイルに書き、標準入力から渡す（末尾の `-`） | タスクそのもの |
 | `-c developer_instructions=…` | 役割規律ブロック（後述）をファイルに書き、`jq -Rs .` で文字列化して渡す | relay のレビュー規律を呼び出し単位で注入する |
-| `-m` | `gpt-6-astra`（既定） | レビューレーンの既定。統括者が別モデルを指名していればそちら |
+| `-m` | astra 系の最新（既定）。「モデル名の解決」で引く | レビューレーンの既定。統括者が別モデルを指名していればそちら |
 | `-c model_reasoning_effort=…` | `"high"` | レビューは high 固定。統括者が別段を指名していればそちら。`"ultra"`（自動タスク委譲）は使わない |
 | `-s` | `read-only` | レビューは読み取り専用。書き込みはエンジンが拒否する——これが機械的な読み取り専用ガードである |
 | `-c approval_policy=…` | `"never"` | 承認プロンプトで停止させない |
@@ -42,8 +59,9 @@ command -v codex >/dev/null && test -f ~/.codex/auth.json && echo preflight-ok
 
 ```bash
 W=<scratchpad>/codex/<タスク名>   # review.md と dev.txt を先に書いておく
+M=$(codex_model astra); [ -n "$M" ] || { echo "モデル名を解決できない" >&2; exit 1; }
 CODEX_OUTPUT_STYLE=none codex exec --json \
-  -m gpt-6-astra -c model_reasoning_effort='"high"' \
+  -m "$M" -c model_reasoning_effort='"high"' \
   -c "developer_instructions=$(jq -Rs . < "$W/dev.txt")" \
   -c approval_policy='"never"' -s read-only \
   -C <作業ルート> -o "$W/last.md" - < "$W/review.md" > "$W/events.jsonl" 2> "$W/stderr.txt"
