@@ -198,7 +198,7 @@ Step 1 のタスク分解表は、会話への出力に加えて TaskCreate で�
 
 ### 呼び戻し
 
-DONE / BLOCKED の宣言行を最終行に出せば、Stop hook（`~/.claude/repo/hooks/relay-notify.py`）がデスクトップ通知を出す。統括者が PushNotification を叩く必要はない（herdr ペイン内では PushNotification が届かないため、通知は hook に一本化している）。
+DONE / BLOCKED の宣言行を最終行に出せば、Stop hook（`~/.claude/repo/hooks/relay-notify.py`）がデスクトップ通知を出す。統括者が PushNotification を叩く必要はない（通知は hook に一本化している）。
 
 ### 開始前チェック
 
